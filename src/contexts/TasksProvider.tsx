@@ -1,53 +1,85 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { Task } from "../entities/Task";
-import { z } from "zod";
 import { tasksService } from "../services/api";
 import { TasksContext } from "./TasksContext";
 
-const UpdateTaskSchema = z.object({
-  title: z.string().optional(),
-  description: z.string().optional(),
-  status: z.enum(["todo", "doing", "done"]).optional(),
-  priority: z.enum(["low", "medium", "high"]).optional(),
-});
-
 export const TasksProvider = ({ children }: { children: ReactNode }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadTasks = async () => {
+    try {
+      setError(null);
+      const data = await tasksService.fetchTasks();
+      setTasks(data);
+    } catch (err) {
+      setError("Erro ao carregar tarefas. Verifique se o backend está rodando.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    tasksService.fetchTasks().then(setTasks);
+    loadTasks();
   }, []);
 
   const createTask = async (attributes: Omit<Task, "id">) => {
-    const task = await tasksService.save(attributes);
-    setTasks((current) => [...current, task]);
-    return task;
+    try {
+      setError(null);
+      const task = await tasksService.save(attributes);
+      setTasks((current) => [...current, task]);
+      return task;
+    } catch (err) {
+      setError("Erro ao criar tarefa. Tente novamente.");
+      console.error(err);
+      throw err;
+    }
   };
 
   const updateTask = async (
-    id: number,
-    attributes: Partial<Omit<Task, "id">>,
+    id: string | number,
+    attributes: Partial<Omit<Task, "id">>
   ) => {
-    const parsed = UpdateTaskSchema.parse(attributes);
+    try {
+      setError(null);
+      
+      // Optimistic update
+      setTasks((current) =>
+        current.map((task) =>
+          task.id === id ? { ...task, ...attributes } : task
+        )
+      );
 
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === id ? { ...task, ...parsed } : task,
-      ),
-    );
-
-  
-  
+      await tasksService.update(id, attributes);
+    } catch (err) {
+      setError("Erro ao atualizar tarefa. Recarregando dados...");
+      console.error(err);
+      await loadTasks(); // Rollback recarregando dados
+      throw err;
+    }
   };
 
-  const deleteTask = async (id: number) => {
-    await tasksService.delete(id);
-    setTasks((current) => current.filter((task) => task.id !== id));
+  const deleteTask = async (id: string | number) => {
+    try {
+      setError(null);
+      
+      // Optimistic update
+      setTasks((current) => current.filter((task) => task.id !== id));
+
+      await tasksService.delete(id);
+    } catch (err) {
+      setError("Erro ao deletar tarefa. Recarregando dados...");
+      console.error(err);
+      await loadTasks(); // Rollback recarregando dados
+      throw err;
+    }
   };
 
   return (
     <TasksContext.Provider
-      value={{ tasks, createTask, updateTask, deleteTask }}
+      value={{ tasks, loading, error, createTask, updateTask, deleteTask, loadTasks }}
     >
       {children}
     </TasksContext.Provider>
