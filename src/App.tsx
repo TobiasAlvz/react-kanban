@@ -1,62 +1,63 @@
+import { useRef } from "react";
 import { TasksProvider } from "./contexts/TasksProvider";
 import { TaskBoard } from "./components/TaskBoard";
 import { CreateTaskForm } from "./components/CreateTaskForm";
-// import { Modal } from "bootstrap";
 
 function App() {
-  // const modal = new Modal("#createTaskModal");
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  const closeModal = () => {
+    if (closeButtonRef.current) {
+      closeButtonRef.current.click();
+    }
+  };
 
   return (
     <TasksProvider>
-      <div className="container-fluid">
-        <div className="d-flex align-items-center gap-4">
-          <h1 className="position-sticky top-0">React Kanban</h1>
+      <div className="container-fluid py-4">
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h1 className="display-6">React Kanban</h1>
 
           <button
             type="button"
-            className="btn btn-primary"
+            className="btn btn-primary btn-lg"
             data-bs-toggle="modal"
             data-bs-target="#createTaskModal"
           >
             Nova tarefa
           </button>
+        </div>
 
-          <div
-            className="modal fade"
-            id="createTaskModal"
-            tabIndex={-1}
-            aria-labelledby="createTaskModalLabel"
-            aria-hidden="true"
-          >
-            <div className="modal-dialog">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h2 className="modal-title" id="createTaskModalLabel">
-                    Nova tarefa
-                  </h2>
+        <div
+          className="modal fade"
+          id="createTaskModal"
+          tabIndex={-1}
+          aria-labelledby="createTaskModalLabel"
+          aria-hidden="true"
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h2 className="modal-title fs-5" id="createTaskModalLabel">
+                  Criar nova tarefa
+                </h2>
+                <button
+                  type="button"
+                  className="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Fechar"
+                  ref={closeButtonRef}
+                />
+              </div>
 
-                  <button
-                    type="button"
-                    className="btn-close"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"
-                  ></button>
-                </div>
-
-                <div className="modal-body">
-                  <CreateTaskForm />
-                </div>
+              <div className="modal-body">
+                <CreateTaskForm onSuccess={closeModal} />
               </div>
             </div>
           </div>
         </div>
 
-        <div>
-          <div className="mt-4">
-            <h2 className="mb-3">Quadro de tarefas</h2>
-            <TaskBoard />
-          </div>
-        </div>
+        <TaskBoard />
       </div>
     </TasksProvider>
   );
