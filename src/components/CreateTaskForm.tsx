@@ -1,144 +1,103 @@
-import { useContext, type FormEventHandler } from "react";
-import { TasksContext } from "../contexts/TasksContext";
-import { z } from "zod";
+import { useState } from "react";
+import { useTasks } from "../contexts/useTasks";
 
-const CreateTaskSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  status: z.enum(["todo", "doing", "done"]),
-  priority: z.enum(["low", "medium", "high"]),
-});
+interface CreateTaskFormProps {
+  onSuccess?: () => void;
+}
 
-export const CreateTaskForm: React.FC = () => {
-  const { createTask } = useContext(TasksContext);
+export const CreateTaskForm: React.FC<CreateTaskFormProps> = ({ onSuccess }) => {
+  const { createTask } = useTasks();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit: FormEventHandler<HTMLFormElement> = async (ev) => {
-    ev.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!title.trim()) {
+      setError("Titulo e obrigatorio");
+      return;
+    }
 
-    const formData = new FormData(ev.currentTarget);
+    setLoading(true);
+    setError("");
 
-    const taskData = CreateTaskSchema.parse({
-      title: formData.get("title"),
-      description: formData.get("description"),
-      status: formData.get("status"),
-      priority: formData.get("priority"),
-    });
+    try {
+      await createTask({
+        title: title.trim(),
+        description: description.trim(),
+        status: "todo",
+        priority,
+      });
 
-    await createTask(taskData);
-
-    ev.currentTarget.reset();
+      setTitle("");
+      setDescription("");
+      setPriority("medium");
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err) {
+      setError("Erro ao criar tarefa. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit}>
+      {error && (
+        <div className="alert alert-danger" role="alert">
+          {error}
+        </div>
+      )}
+
       <div className="mb-3">
-        <label htmlFor="title">Título</label>
+        <label className="form-label fw-bold">Titulo</label>
         <input
-          className="form-control"
           type="text"
-          name="title"
-          id="title"
-          autoFocus
+          className="form-control"
+          placeholder="Digite o titulo da tarefa"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          disabled={loading}
         />
       </div>
 
       <div className="mb-3">
-        <label htmlFor="description">Descrição</label>
+        <label className="form-label fw-bold">Descricao</label>
         <textarea
           className="form-control"
-          name="description"
-          id="description"
-        ></textarea>
+          rows={3}
+          placeholder="Digite a descricao da tarefa"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          disabled={loading}
+        />
       </div>
 
       <div className="mb-3">
-        <div>Status</div>
-
-        <div className="form-check">
-          <input
-            className="form-check-input"
-            type="radio"
-            name="status"
-            id="todo"
-            value="todo"
-          />
-          <label className="form-check-label" htmlFor="todo">
-            Para Fazer
-          </label>
-        </div>
-
-        <div className="form-check">
-          <input
-            className="form-check-input"
-            type="radio"
-            name="status"
-            id="doing"
-            value="doing"
-          />
-          <label className="form-check-label" htmlFor="doing">
-            Em Progresso
-          </label>
-        </div>
-
-        <div className="form-check">
-          <input
-            className="form-check-input"
-            type="radio"
-            name="status"
-            id="done"
-            value="done"
-          />
-          <label className="form-check-label" htmlFor="done">
-            Completada
-          </label>
-        </div>
+        <label className="form-label fw-bold">Prioridade</label>
+        <select
+          className="form-select"
+          value={priority}
+          onChange={(e) => setPriority(e.target.value as "low" | "medium" | "high")}
+          disabled={loading}
+        >
+          <option value="low">Baixa</option>
+          <option value="medium">Media</option>
+          <option value="high">Alta</option>
+        </select>
       </div>
 
-      <div className="mb-3">
-        <div>Prioridade</div>
-
-        <div className="form-check">
-          <input
-            className="form-check-input"
-            type="radio"
-            name="priority"
-            id="low"
-            value="low"
-          />
-          <label className="form-check-label" htmlFor="low">
-            Baixa
-          </label>
-        </div>
-
-        <div className="form-check">
-          <input
-            className="form-check-input"
-            type="radio"
-            name="priority"
-            id="medium"
-            value="medium"
-          />
-          <label className="form-check-label" htmlFor="medium">
-            Média
-          </label>
-        </div>
-
-        <div className="form-check">
-          <input
-            className="form-check-input"
-            type="radio"
-            name="priority"
-            id="high"
-            value="high"
-          />
-          <label className="form-check-label" htmlFor="high">
-            Alta
-          </label>
-        </div>
-      </div>
-
-      <button type="submit" className="btn btn-primary">
-        Criar Tarefa
+      <button 
+        type="submit" 
+        className="btn btn-primary w-100"
+        disabled={loading}
+      >
+        {loading ? "Criando..." : "Criar tarefa"}
       </button>
     </form>
   );
