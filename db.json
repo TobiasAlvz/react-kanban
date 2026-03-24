@@ -2,10 +2,10 @@
   "tasks": [
     {
       "id": "1",
-      "title": "Enviar relatório",
-      "description": "Enviar o relatório mensal para o departamento financeiro.",
+      "title": "pegar Dinheiro",
+      "description": "Pegar Dinheiro no banco.",
       "status": "done",
-      "priority": "high"
+      "priority": "low"
     },
     {
       "id": "2",
@@ -27,6 +27,20 @@
       "status": "todo",
       "priority": "low",
       "id": "A-1Rcn-BFJM"
+    },
+    {
+      "title": "dasd",
+      "description": "asdasd",
+      "status": "todo",
+      "priority": "high",
+      "id": "vxCyL_KOtEI"
+    },
+    {
+      "id": "u4HN58FWPx4",
+      "title": "Fazer Relatorio",
+      "description": "Enviar o relatório mensal",
+      "status": "done",
+      "priority": "high"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"
